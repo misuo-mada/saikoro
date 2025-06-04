@@ -1,0 +1,206 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <title>サイコロアプリ</title>
+  <style>
+    body {
+      text-align: center;
+      font-family: sans-serif;
+      background: #222;
+      color: white;
+      padding: 30px;
+    }
+    .dice-container {
+      display: flex;
+      justify-content: center;
+      flex-wrap: wrap;
+      gap: 20px;
+      margin: 30px auto;
+    }
+    .dice {
+      font-size: 100px;
+      transition: transform 0.2s ease;
+      width: 120px;
+      height: 120px;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+    }
+    .img-dice {
+      width: 100px;
+      height: 100px;
+    }
+    button {
+      margin: 6px;
+      padding: 10px 20px;
+      font-size: 16px;
+      background: #44c;
+      color: white;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+    }
+    button:hover {
+      background: #66f;
+    }
+    #totalDisplay, #historyDisplay {
+      margin-top: 20px;
+      font-size: 20px;
+      display: none;
+    }
+  </style>
+</head>
+<body>
+
+  <h1>サイコロアプリ</h1>
+
+  <div class="dice-container" id="dice-container"></div>
+
+  <div>
+    <button onclick="rollDice()">ふる</button>
+  </div>
+
+  <div>
+    <button onclick="setStyle('emoji')">🎲 絵文字</button>
+    <button onclick="setStyle('number')">🔢 数字</button>
+    <button onclick="setStyle('dots')">⚫ ドット</button>
+    <button onclick="setStyle('image')">🖼️ 絵柄風</button>
+  </div>
+
+  <div>
+    <button onclick="setDiceCount(1)">🎲1個</button>
+    <button onclick="setDiceCount(2)">🎲2個</button>
+    <button onclick="setDiceCount(3)">🎲3個</button>
+    <button onclick="setDiceCount(4)">🎲4個</button>
+    <button onclick="setDiceCount(5)">🎲5個</button>
+  </div>
+
+  <div>
+    <button onclick="toggleTotal()">🔢 合計を表示/非表示</button>
+    <button onclick="toggleHistory()">📜 履歴を表示/非表示</button>
+  </div>
+
+  <div id="totalDisplay"></div>
+  <div id="historyDisplay"></div>
+
+  <script>
+    let currentStyle = 'emoji';
+    let diceCount = 1;
+    let showTotal = false;
+    let showHistory = false;
+    let history = [];
+
+    const emojiFaces = ['⚀', '⚁', '⚂', '⚃', '⚄', '⚅'];
+    const numberFaces = ['1', '2', '3', '4', '5', '6'];
+    const dotsFaces = ['●', '●●', '●●●', '●●●●', '●●●●●', '●●●●●●'];
+    const imageFaces = [
+      'https://upload.wikimedia.org/wikipedia/commons/2/2c/Alea_1.png',
+      'https://upload.wikimedia.org/wikipedia/commons/b/b8/Alea_2.png',
+      'https://upload.wikimedia.org/wikipedia/commons/2/2f/Alea_3.png',
+      'https://upload.wikimedia.org/wikipedia/commons/8/8d/Alea_4.png',
+      'https://upload.wikimedia.org/wikipedia/commons/5/55/Alea_5.png',
+      'https://upload.wikimedia.org/wikipedia/commons/f/f4/Alea_6.png'
+    ];
+
+    const container = document.getElementById('dice-container');
+    const totalDisplay = document.getElementById('totalDisplay');
+    const historyDisplay = document.getElementById('historyDisplay');
+
+    function createDiceElements() {
+      container.innerHTML = '';
+      for (let i = 0; i < diceCount; i++) {
+        const div = document.createElement('div');
+        div.className = 'dice';
+        div.id = `dice-${i}`;
+        div.textContent = '🎲';
+        container.appendChild(div);
+      }
+    }
+
+    function rollDice() {
+      let results = [];
+      for (let i = 0; i < diceCount; i++) {
+        const diceElem = document.getElementById(`dice-${i}`);
+        let count = 0;
+        const index = Math.floor(Math.random() * 6);
+        results.push(index + 1);
+        const interval = setInterval(() => {
+          const tempIndex = Math.floor(Math.random() * 6);
+          updateDiceDisplay(diceElem, tempIndex);
+          diceElem.style.transform = `rotate(${Math.random() * 360}deg) scale(${1 + Math.random() * 0.2})`;
+          count++;
+          if (count > 10) {
+            clearInterval(interval);
+            diceElem.style.transform = 'rotate(0deg) scale(1)';
+            updateDiceDisplay(diceElem, index);
+          }
+        }, 80);
+      }
+      // 表示用に更新
+      setTimeout(() => {
+        updateTotal(results);
+        updateHistory(results);
+      }, 1000);
+    }
+
+    function updateDiceDisplay(elem, index) {
+      if (currentStyle === 'emoji') {
+        elem.innerHTML = emojiFaces[index];
+      } else if (currentStyle === 'number') {
+        elem.innerHTML = numberFaces[index];
+      } else if (currentStyle === 'dots') {
+        elem.innerHTML = dotsFaces[index];
+      } else if (currentStyle === 'image') {
+        elem.innerHTML = `<img class="img-dice" src="${imageFaces[index]}" alt="dice">`;
+      }
+    }
+
+    function setStyle(style) {
+      currentStyle = style;
+      rollDice();
+    }
+
+    function setDiceCount(count) {
+      diceCount = count;
+      createDiceElements();
+      rollDice();
+    }
+
+    function updateTotal(results) {
+      if (showTotal) {
+        const sum = results.reduce((a, b) => a + b, 0);
+        totalDisplay.innerText = `合計：${sum}`;
+      }
+    }
+
+    function updateHistory(results) {
+      if (showHistory) {
+        const symbols = results.map(n => {
+          if (currentStyle === 'emoji') return emojiFaces[n - 1];
+          if (currentStyle === 'number') return numberFaces[n - 1];
+          if (currentStyle === 'dots') return dotsFaces[n - 1];
+          if (currentStyle === 'image') return `🎲${n}`;
+        });
+        history.unshift(symbols.join(' '));
+        if (history.length > 10) history.pop();
+        historyDisplay.innerText = `履歴：\n${history.join('\n')}`;
+      }
+    }
+
+    function toggleTotal() {
+      showTotal = !showTotal;
+      totalDisplay.style.display = showTotal ? 'block' : 'none';
+    }
+
+    function toggleHistory() {
+      showHistory = !showHistory;
+      historyDisplay.style.display = showHistory ? 'block' : 'none';
+    }
+
+    // 初期表示
+    setDiceCount(1);
+  </script>
+
+</body>
+</html>
